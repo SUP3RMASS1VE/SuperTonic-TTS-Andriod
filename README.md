@@ -1,4 +1,6 @@
 # Supertonic TTS - Android App
+![Screenshot_20251122_212451_SuperTonic](https://github.com/user-attachments/assets/787b38a8-63f4-446f-babf-80d9c862e2dc)
+![Screenshot_20251122_212502_SuperTonic](https://github.com/user-attachments/assets/66926878-ddb9-4588-b124-ac5a7cbe2d78)
 
 A native Android app for on-device text-to-speech using [Supertonic TTS](https://github.com/supertone-inc/supertonic) and ONNX Runtime.
 
@@ -157,3 +159,4 @@ If you encounter issues:
 **Note**: This app requires significant storage (~300 MB) and RAM (~500 MB during generation) due to the bundled AI models. First generation takes longer as models are loaded into memory.
 
 Made with ❤️ using Supertonic TTS
+
