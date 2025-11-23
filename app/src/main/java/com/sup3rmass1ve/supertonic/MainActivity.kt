@@ -49,6 +49,27 @@ fun formatTime(samples: Int, sampleRate: Int = 22050): String {
     return "%d:%02d".format(minutes, remainingSeconds)
 }
 
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onTertiaryContainer
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TTSScreen(
@@ -306,6 +327,41 @@ fun TTSScreen(
                         activeTrackColor = MaterialTheme.colorScheme.tertiary
                     )
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Seed Input
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = "Seed (optional, for reproducibility)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                OutlinedTextField(
+                    value = uiState.seed?.toString() ?: "",
+                    onValueChange = { 
+                        val seed = it.toLongOrNull()
+                        viewModel.updateSeed(seed)
+                    },
+                    placeholder = { Text("Leave empty for random") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.isInitialized && !uiState.isGenerating,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                )
             }
         }
         
@@ -452,6 +508,52 @@ fun TTSScreen(
             }
             
             Spacer(modifier = Modifier.height(8.dp))
+            
+            // Generation Info Card
+            uiState.generationInfo?.let { info ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(
+                                text = "Generation Info",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        
+                        // Info rows
+                        InfoRow("Voice Style", info.voiceStyle)
+                        InfoRow("Speed", "${"%.2f".format(Locale.US, info.speed)}x")
+                        InfoRow("Quality Steps", "${info.denoisingSteps}")
+                        InfoRow("Seed", "${info.seed}")
+                        InfoRow("Audio Duration", "${"%.2f".format(Locale.US, info.audioDuration)}s")
+                        InfoRow("Generation Time", "${"%.2f".format(Locale.US, info.generationTime)}s")
+                        InfoRow("Sample Rate", "${info.sampleRate} Hz")
+                        InfoRow("Audio Samples", "${info.audioSamples}")
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))

@@ -35,7 +35,11 @@ class TextProcessor(context: Context) {
     private fun preprocessText(text: String): String {
         var processed = text
         
-        // Remove emojis
+        // TODO: Need advanced normalizer for better performance
+        processed = Normalizer.normalize(processed, Normalizer.Form.NFKD)
+        
+        // FIXME: this should be fixed for non-English languages
+        // Remove emojis (wide Unicode range)
         processed = processed.replace(Regex("[\uD83C-\uDBFF\uDC00-\uDFFF]+"), "")
         
         // Replace various dashes and symbols (normalize apostrophes to standard ')
@@ -52,14 +56,11 @@ class TextProcessor(context: Context) {
         }
         
         // Remove combining diacritics
+        // FIXME: this should be fixed for non-English languages
         processed = processed.replace(Regex("[\u0302\u0303\u0304\u0305\u0306\u0307\u0308\u030A\u030B\u030C\u0327\u0328\u0329\u032A\u032B\u032C\u032D\u032E\u032F]"), "")
         
         // Remove special symbols
         processed = processed.replace(Regex("[♥☆♡©\\\\]"), "")
-        
-        // Replace apostrophes in contractions with space for better pronunciation
-        // This makes "I've" → "I ve", "don't" → "don t", etc.
-        processed = processed.replace(Regex("(\\w)'(\\w)"), "$1 $2")
         
         // Replace known expressions
         processed = processed.replace("@", " at ")

@@ -91,6 +91,10 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(denoisingSteps = steps)
     }
     
+    fun updateSeed(seed: Long?) {
+        _uiState.value = _uiState.value.copy(seed = seed)
+    }
+    
     fun generateSpeech() {
         val currentState = _uiState.value
         
@@ -111,26 +115,42 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
                     status = "Generating speech..."
                 )
                 
-                val audio = withContext(Dispatchers.IO) {
+                val startTime = System.currentTimeMillis()
+                val result = withContext(Dispatchers.IO) {
                     val voiceStyle = voiceStyleLoader.loadVoiceStyle(currentState.selectedVoiceStyle)
                     tts.generateSpeech(
                         text = currentState.inputText,
                         voiceStyle = voiceStyle,
                         speed = currentState.speed,
-                        totalSteps = currentState.denoisingSteps
+                        totalSteps = currentState.denoisingSteps,
+                        seed = currentState.seed
                     )
                 }
+                val generationTime = System.currentTimeMillis() - startTime
+                
+                val audioDuration = result.audio.size.toFloat() / tts.sampleRate
+                val generationInfo = GenerationInfo(
+                    seed = result.seedUsed,
+                    speed = currentState.speed,
+                    denoisingSteps = currentState.denoisingSteps,
+                    voiceStyle = currentState.selectedVoiceStyle.removeSuffix(".json"),
+                    audioDuration = audioDuration,
+                    generationTime = generationTime / 1000f,
+                    sampleRate = tts.sampleRate,
+                    audioSamples = result.audio.size
+                )
                 
                 _uiState.value = currentState.copy(
                     isGenerating = false,
                     status = "Ready",
-                    generatedAudio = audio,
+                    generatedAudio = result.audio,
                     playbackPosition = 0,
-                    playbackDuration = audio.size
+                    playbackDuration = result.audio.size,
+                    generationInfo = generationInfo
                 )
                 
                 withContext(Dispatchers.IO) {
-                    audioPlayer?.loadAudio(audio)
+                    audioPlayer?.loadAudio(result.audio)
                     audioPlayer?.play()
                 }
                 
@@ -214,6 +234,7 @@ data class TTSUiState(
     val selectedVoiceStyle: String = "",
     val speed: Float = 1.05f,
     val denoisingSteps: Int = 5,
+    val seed: Long? = null,
     val isGenerating: Boolean = false,
     val isInitialized: Boolean = false,
     val status: String = "Initializing...",
@@ -221,5 +242,17 @@ data class TTSUiState(
     val isPlaying: Boolean = false,
     val playbackPosition: Int = 0,
     val playbackDuration: Int = 0,
-    val sampleRate: Int = 22050
+    val sampleRate: Int = 22050,
+    val generationInfo: GenerationInfo? = null
+)
+
+data class GenerationInfo(
+    val seed: Long,
+    val speed: Float,
+    val denoisingSteps: Int,
+    val voiceStyle: String,
+    val audioDuration: Float,
+    val generationTime: Float,
+    val sampleRate: Int,
+    val audioSamples: Int
 )

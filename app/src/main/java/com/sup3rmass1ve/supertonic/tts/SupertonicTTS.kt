@@ -9,6 +9,11 @@ import java.nio.LongBuffer
 import kotlin.math.ceil
 import kotlin.random.Random
 
+data class TTSResult(
+    val audio: FloatArray,
+    val seedUsed: Long
+)
+
 class SupertonicTTS(private val context: Context) {
     private val ortEnv = OrtEnvironment.getEnvironment()
     private val sessionOptions = OrtSession.SessionOptions()
@@ -58,14 +63,18 @@ class SupertonicTTS(private val context: Context) {
         text: String,
         voiceStyle: VoiceStyle,
         speed: Float = 1.05f,
-        totalSteps: Int = 5
-    ): FloatArray {
+        totalSteps: Int = 5,
+        seed: Long? = null
+    ): TTSResult {
+        // Generate or use provided seed
+        val actualSeed = seed ?: System.currentTimeMillis()
+        
         // Split text into chunks if needed
         val chunks = chunkText(text)
         val allAudio = mutableListOf<FloatArray>()
         
         for (chunk in chunks) {
-            val audio = generateChunk(chunk, voiceStyle, speed, totalSteps)
+            val audio = generateChunk(chunk, voiceStyle, speed, totalSteps, actualSeed)
             allAudio.add(audio)
             
             // Add silence between chunks
@@ -84,14 +93,15 @@ class SupertonicTTS(private val context: Context) {
             offset += audio.size
         }
         
-        return result
+        return TTSResult(result, actualSeed)
     }
     
     private fun generateChunk(
         text: String,
         voiceStyle: VoiceStyle,
         speed: Float,
-        totalSteps: Int
+        totalSteps: Int,
+        seed: Long?
     ): FloatArray {
         // Process text
         val (textIds, textMask) = textProcessor.processText(text)
@@ -137,7 +147,8 @@ class SupertonicTTS(private val context: Context) {
         val latentLen = ceil(wavLen.toFloat() / chunkSize).toInt()
         val latentDim = config.ttl.latent_dim * config.ttl.chunk_compress_factor
         
-        var noisyLatent = Array(1) { Array(latentDim) { FloatArray(latentLen) { Random.nextFloat() * 2 - 1 } } }
+        val random = if (seed != null) Random(seed) else Random.Default
+        var noisyLatent = Array(1) { Array(latentDim) { FloatArray(latentLen) { random.nextFloat() * 2 - 1 } } }
         val latentMask = createLatentMask(wavLen, latentLen, latentDim)
         
         // Step 4: Iterative denoising
