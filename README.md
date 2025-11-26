@@ -1,6 +1,14 @@
 # Supertonic TTS – Android App
 
-![1000002504](https://github.com/user-attachments/assets/411affbb-0751-4ac0-8cfe-259aa7b21e76)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/077bad6c-8ba4-4665-8a6d-eaf23f685e7c" width="45%" />
+  <img src="https://github.com/user-attachments/assets/e66caed2-7302-4181-8278-be7d571b46a8" width="45%" />
+</p>
+
+# Supertonic TTS – Android App
+
+
+
 
 A native Android application for on-device text-to-speech (TTS) using [Supertonic TTS](https://github.com/supertone-inc/supertonic) and ONNX Runtime.
 
