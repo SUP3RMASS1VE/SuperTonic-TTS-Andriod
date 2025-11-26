@@ -487,22 +487,53 @@ fun TTSScreen(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Stop")
                         }
-                        
-                        FilledTonalButton(
-                            onClick = { viewModel.saveAudio() },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Format selector
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = "Save Format:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                    ) {
+                        com.sup3rmass1ve.supertonic.audio.AudioFormat.entries.forEach { format ->
+                            FilterChip(
+                                selected = uiState.selectedAudioFormat == format,
+                                onClick = { viewModel.updateAudioFormat(format) },
+                                label = { Text(format.extension.uppercase()) },
+                                modifier = Modifier.weight(1f)
                             )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Save")
                         }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Save button
+                    FilledTonalButton(
+                        onClick = { viewModel.saveAudio() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Save as ${uiState.selectedAudioFormat.extension.uppercase()}")
                     }
                 }
             }

@@ -37,6 +37,19 @@ class SupertonicTTS(private val context: Context) {
             // Initialize text processor
             textProcessor = TextProcessor(context)
             
+            // Configure session options for optimal Android performance
+            sessionOptions.apply {
+                try {
+                    // Try to enable NNAPI for hardware acceleration (GPU/DSP/NPU)
+                    addNnapi()
+                } catch (e: Exception) {
+                    // NNAPI not available, will use CPU
+                }
+                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                setIntraOpNumThreads(Runtime.getRuntime().availableProcessors())
+                setInterOpNumThreads(2)
+            }
+            
             // Load ONNX models
             dpSession = ortEnv.createSession(
                 context.assets.open("onnx/duration_predictor.onnx").readBytes(),

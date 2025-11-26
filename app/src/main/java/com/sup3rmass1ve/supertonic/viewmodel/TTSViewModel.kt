@@ -95,6 +95,10 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(seed = seed)
     }
     
+    fun updateAudioFormat(format: com.sup3rmass1ve.supertonic.audio.AudioFormat) {
+        _uiState.value = _uiState.value.copy(selectedAudioFormat = format)
+    }
+    
     fun generateSpeech() {
         val currentState = _uiState.value
         
@@ -200,10 +204,11 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.value = currentState.copy(status = "Saving audio...")
                 
                 val timestamp = System.currentTimeMillis()
-                val fileName = "supertonic_${timestamp}.wav"
+                val format = currentState.selectedAudioFormat
+                val fileName = "supertonic_${timestamp}.${format.extension}"
                 
                 val result = withContext(Dispatchers.IO) {
-                    audioSaver.saveAudioToDownloads(audio, tts.sampleRate, fileName)
+                    audioSaver.saveAudioToDownloads(audio, tts.sampleRate, fileName, format)
                 }
                 
                 result.fold(
@@ -243,7 +248,8 @@ data class TTSUiState(
     val playbackPosition: Int = 0,
     val playbackDuration: Int = 0,
     val sampleRate: Int = 22050,
-    val generationInfo: GenerationInfo? = null
+    val generationInfo: GenerationInfo? = null,
+    val selectedAudioFormat: com.sup3rmass1ve.supertonic.audio.AudioFormat = com.sup3rmass1ve.supertonic.audio.AudioFormat.WAV
 )
 
 data class GenerationInfo(
