@@ -12,8 +12,8 @@ android {
         applicationId = "com.sup3rmass1ve.supertonic"
         minSdk = 26
         targetSdk = 35
-        versionCode = 303
-        versionName = "3.0.3"
+        versionCode = 310
+        versionName = "3.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.onnxruntime.android)
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
