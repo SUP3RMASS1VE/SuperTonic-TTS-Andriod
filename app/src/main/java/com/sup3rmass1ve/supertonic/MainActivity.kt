@@ -259,19 +259,27 @@ fun TTSScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (uiState.isInitialized) AccentGreen.copy(alpha = 0.15f) else AccentOrange.copy(alpha = 0.15f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(8.dp).background(if (uiState.isInitialized) AccentGreen else AccentOrange, CircleShape))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (uiState.isInitialized) "Ready" else "Initializing...", style = MaterialTheme.typography.labelMedium, color = if (uiState.isInitialized) AccentGreen else AccentOrange)
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (uiState.isInitialized) AccentGreen.copy(alpha = 0.15f) else AccentOrange.copy(alpha = 0.15f)
+                        ) {
+                            Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(8.dp).background(if (uiState.isInitialized) AccentGreen else AccentOrange, CircleShape))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(if (uiState.isInitialized) "Ready" else "Initializing...", style = MaterialTheme.typography.labelMedium, color = if (uiState.isInitialized) AccentGreen else AccentOrange)
+                            }
                         }
+                        
+
                     }
                 }
             }
             
+
             // Text Input Card
             GlassCard(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                 SectionHeader(Icons.Default.Edit, "Your Text", MaterialTheme.colorScheme.primary)
@@ -296,8 +304,9 @@ fun TTSScreen(
                 SectionHeader(Icons.Default.Person, "Voice Style", MaterialTheme.colorScheme.secondary)
                 var expanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded && uiState.isInitialized }) {
+                    val displayName = uiState.selectedVoiceStyle.removeSuffix(".json").replace("_", " ")
                     OutlinedTextField(
-                        value = uiState.selectedVoiceStyle.removeSuffix(".json"),
+                        value = displayName,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.secondary) },
@@ -314,10 +323,19 @@ fun TTSScreen(
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         uiState.voiceStyles.forEach { style ->
+                            val displayName = style.removeSuffix(".json").replace("_", " ")
+                            
                             DropdownMenuItem(
-                                text = { Text(style.removeSuffix(".json"), style = MaterialTheme.typography.bodyMedium) },
+                                text = { Text(displayName, style = MaterialTheme.typography.bodyMedium) },
                                 onClick = { viewModel.updateVoiceStyle(style); expanded = false },
-                                leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp)) }
+                                leadingIcon = { 
+                                    Icon(
+                                        Icons.Default.Person, 
+                                        null, 
+                                        tint = MaterialTheme.colorScheme.secondary, 
+                                        modifier = Modifier.size(20.dp)
+                                    ) 
+                                }
                             )
                         }
                     }
@@ -349,52 +367,52 @@ fun TTSScreen(
                     colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                 )
                 
-                Spacer(modifier = Modifier.height(20.dp))
-                
                 // Quality Steps Control
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Quality", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)) {
-                        Text("${uiState.denoisingSteps} steps", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-                    }
-                }
-                Slider(
-                    value = uiState.denoisingSteps.toFloat(),
-                    onValueChange = { viewModel.updateSteps(it.toInt()) },
-                    valueRange = 1f..20f,
-                    steps = 18,
-                    enabled = uiState.isInitialized && !uiState.isGenerating,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.secondary, activeTrackColor = MaterialTheme.colorScheme.secondary, inactiveTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f))
-                )
-                
                 Spacer(modifier = Modifier.height(20.dp))
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Quality", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                        Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)) {
+                            Text("${uiState.denoisingSteps} steps", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                        }
+                    }
+                    Slider(
+                        value = uiState.denoisingSteps.toFloat(),
+                        onValueChange = { viewModel.updateSteps(it.toInt()) },
+                        valueRange = 1f..20f,
+                        steps = 18,
+                        enabled = uiState.isInitialized && !uiState.isGenerating,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.secondary, activeTrackColor = MaterialTheme.colorScheme.secondary, inactiveTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f))
+                    )
+                    
+                    Spacer(modifier = Modifier.height(20.dp))
                 
                 // Seed Input
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                    Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Seed (optional)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                }
-                OutlinedTextField(
-                    value = uiState.seed?.toString() ?: "",
-                    onValueChange = { viewModel.updateSeed(it.toLongOrNull()) },
-                    placeholder = { Text("Random", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = uiState.isInitialized && !uiState.isGenerating,
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Seed (optional)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    OutlinedTextField(
+                        value = uiState.seed?.toString() ?: "",
+                        onValueChange = { viewModel.updateSeed(it.toLongOrNull()) },
+                        placeholder = { Text("Random", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = uiState.isInitialized && !uiState.isGenerating,
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
                     )
-                )
             }
             
             // Generate Button

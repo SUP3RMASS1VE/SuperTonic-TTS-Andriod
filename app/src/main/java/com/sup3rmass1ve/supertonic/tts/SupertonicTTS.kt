@@ -16,19 +16,24 @@ data class TTSResult(
 
 class SupertonicTTS(private val context: Context) {
     private val ortEnv = OrtEnvironment.getEnvironment()
-    private val sessionOptions = OrtSession.SessionOptions()
+    private var sessionOptions: OrtSession.SessionOptions? = null
     
-    private lateinit var dpSession: OrtSession
-    private lateinit var textEncSession: OrtSession
-    private lateinit var vectorEstSession: OrtSession
-    private lateinit var vocoderSession: OrtSession
+    private var dpSession: OrtSession? = null
+    private var textEncSession: OrtSession? = null
+    private var vectorEstSession: OrtSession? = null
+    private var vocoderSession: OrtSession? = null
     
     private lateinit var textProcessor: TextProcessor
     private lateinit var config: TTSConfig
     
+    private var isInitialized = false
+    
     val sampleRate: Int get() = if (::config.isInitialized) config.ae.sample_rate else 44100
     
     fun initialize() {
+        // Skip if already initialized
+        if (isInitialized) return
+        
         try {
             // Load config
             val configJson = context.assets.open("onnx/tts.json").bufferedReader().use { it.readText() }
@@ -38,7 +43,7 @@ class SupertonicTTS(private val context: Context) {
             textProcessor = TextProcessor(context)
             
             // Configure session options for optimal Android performance
-            sessionOptions.apply {
+            sessionOptions = OrtSession.SessionOptions().apply {
                 try {
                     // Try to enable NNAPI for hardware acceleration (GPU/DSP/NPU)
                     addNnapi()
@@ -67,6 +72,8 @@ class SupertonicTTS(private val context: Context) {
                 context.assets.open("onnx/vocoder.onnx").readBytes(),
                 sessionOptions
             )
+            
+            isInitialized = true
         } catch (e: Exception) {
             throw Exception("Failed to initialize TTS: ${e.message}", e)
         }
@@ -116,6 +123,11 @@ class SupertonicTTS(private val context: Context) {
         totalSteps: Int,
         seed: Long?
     ): FloatArray {
+        val dp = dpSession ?: throw IllegalStateException("TTS not initialized")
+        val textEnc = textEncSession ?: throw IllegalStateException("TTS not initialized")
+        val vectorEst = vectorEstSession ?: throw IllegalStateException("TTS not initialized")
+        val vocoder = vocoderSession ?: throw IllegalStateException("TTS not initialized")
+        
         // Process text
         val (textIds, textMask) = textProcessor.processText(text)
         val textLen = textIds[0].size
@@ -137,7 +149,7 @@ class SupertonicTTS(private val context: Context) {
             "text_mask" to OnnxTensor.createTensor(ortEnv, FloatBuffer.wrap(textMaskTensor), longArrayOf(1, 1, textLen.toLong()))
         )
         
-        val dpResult = dpSession.run(dpInputs)
+        val dpResult = dp.run(dpInputs)
         val durationArray = dpResult[0].value as FloatArray
         val duration = durationArray[0] / speed
         dpResult.close()
@@ -150,7 +162,7 @@ class SupertonicTTS(private val context: Context) {
             "text_mask" to OnnxTensor.createTensor(ortEnv, FloatBuffer.wrap(textMaskTensor), longArrayOf(1, 1, textLen.toLong()))
         )
         
-        val textEncResult = textEncSession.run(textEncInputs)
+        val textEncResult = textEnc.run(textEncInputs)
         val textEmb = textEncResult[0].value as Array<Array<FloatArray>>
         textEncInputs.values.forEach { it.close() }
         
@@ -183,7 +195,7 @@ class SupertonicTTS(private val context: Context) {
                 "total_step" to OnnxTensor.createTensor(ortEnv, FloatBuffer.wrap(totalStepArray), longArrayOf(1))
             )
             
-            val vecEstResult = vectorEstSession.run(vecEstInputs)
+            val vecEstResult = vectorEst.run(vecEstInputs)
             val updatedLatent = vecEstResult[0].value as Array<Array<FloatArray>>
             noisyLatent = updatedLatent
             
@@ -199,7 +211,7 @@ class SupertonicTTS(private val context: Context) {
             "latent" to OnnxTensor.createTensor(ortEnv, FloatBuffer.wrap(flatFinalLatent), longArrayOf(1, latentDim.toLong(), latentLen.toLong()))
         )
         
-        val vocoderResult = vocoderSession.run(vocoderInputs)
+        val vocoderResult = vocoder.run(vocoderInputs)
         val wav = (vocoderResult[0].value as Array<FloatArray>)[0]
         
         vocoderResult.close()
@@ -233,9 +245,15 @@ class SupertonicTTS(private val context: Context) {
     }
     
     fun close() {
-        dpSession.close()
-        textEncSession.close()
-        vectorEstSession.close()
-        vocoderSession.close()
+        dpSession?.close()
+        textEncSession?.close()
+        vectorEstSession?.close()
+        vocoderSession?.close()
+        sessionOptions?.close()
+        dpSession = null
+        textEncSession = null
+        vectorEstSession = null
+        vocoderSession = null
+        isInitialized = false
     }
 }

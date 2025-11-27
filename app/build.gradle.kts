@@ -12,8 +12,8 @@ android {
         applicationId = "com.sup3rmass1ve.supertonic"
         minSdk = 26
         targetSdk = 35
-        versionCode = 310
-        versionName = "3.1.0"
+        versionCode = 311
+        versionName = "3.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -23,7 +23,7 @@ android {
     }
     
     androidResources {
-        noCompress += listOf("onnx", "json")
+        noCompress += listOf("onnx", "json", "npy", "dict")
     }
 
     buildTypes {
@@ -81,4 +81,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    
+    // Kokoro TTS dependencies
+    implementation(libs.npy)
+    implementation(libs.ipa.transcribers)
 }

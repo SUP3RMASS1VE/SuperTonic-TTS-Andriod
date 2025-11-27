@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sup3rmass1ve.supertonic.audio.AudioPlayer
-import com.sup3rmass1ve.supertonic.model.VoiceStyle
 import com.sup3rmass1ve.supertonic.tts.SupertonicTTS
 import com.sup3rmass1ve.supertonic.tts.VoiceStyleLoader
 import kotlinx.coroutines.Dispatchers
@@ -14,66 +13,76 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class TTSViewModel(application: Application) : AndroidViewModel(application) {
-    private val tts = SupertonicTTS(application)
+    private var supertonicTTS: SupertonicTTS? = null
     private val voiceStyleLoader = VoiceStyleLoader(application)
     private var audioPlayer: AudioPlayer? = null
     private val audioSaver = com.sup3rmass1ve.supertonic.audio.AudioSaver(application)
+    private val context = application
     
     private val _uiState = MutableStateFlow(TTSUiState())
     val uiState: StateFlow<TTSUiState> = _uiState
     
     init {
         viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(status = "Initializing TTS engine...")
-                withContext(Dispatchers.IO) {
-                    try {
-                        tts.initialize()
-                    } catch (e: Exception) {
-                        throw Exception("Failed to load models: ${e.message}", e)
-                    }
-                }
-                
-                try {
-                    audioPlayer = AudioPlayer(tts.sampleRate).apply {
-                        onPositionUpdate = { position, duration ->
-                            _uiState.value = _uiState.value.copy(
-                                playbackPosition = position,
-                                playbackDuration = duration
-                            )
-                        }
-                        onPlaybackComplete = {
-                            _uiState.value = _uiState.value.copy(
-                                isPlaying = false,
-                                status = "Ready"
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    throw Exception("Failed to create audio player: ${e.message}", e)
-                }
-                
-                val voiceStyles = voiceStyleLoader.getAvailableVoiceStyles()
-                if (voiceStyles.isEmpty()) {
-                    throw Exception("No voice styles found in assets")
-                }
-                
-                _uiState.value = _uiState.value.copy(
-                    voiceStyles = voiceStyles,
-                    selectedVoiceStyle = voiceStyles.firstOrNull() ?: "",
-                    status = "Ready",
-                    isInitialized = true,
-                    sampleRate = tts.sampleRate
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _uiState.value = _uiState.value.copy(
-                    status = "Error initializing: ${e.message}\n\nPlease reinstall the app.",
-                    isInitialized = false
-                )
-            }
+            initializeEngine()
         }
     }
+    
+    private suspend fun initializeEngine() {
+        try {
+            _uiState.value = _uiState.value.copy(
+                status = "Initializing Supertonic engine...",
+                isInitialized = false
+            )
+            
+            withContext(Dispatchers.IO) {
+                if (supertonicTTS == null) {
+                    supertonicTTS = SupertonicTTS(context)
+                }
+                supertonicTTS!!.initialize()
+            }
+            
+            val sampleRate = supertonicTTS!!.sampleRate
+            
+            // Recreate audio player with correct sample rate
+            audioPlayer?.stop()
+            audioPlayer = AudioPlayer(sampleRate).apply {
+                onPositionUpdate = { position, duration ->
+                    _uiState.value = _uiState.value.copy(
+                        playbackPosition = position,
+                        playbackDuration = duration
+                    )
+                }
+                onPlaybackComplete = {
+                    _uiState.value = _uiState.value.copy(
+                        isPlaying = false,
+                        status = "Ready"
+                    )
+                }
+            }
+            
+            // Load all voices from assets
+            val voices = voiceStyleLoader.getAvailableVoiceStyles()
+            
+            _uiState.value = _uiState.value.copy(
+                voiceStyles = voices,
+                selectedVoiceStyle = voices.firstOrNull() ?: "",
+                status = "Ready",
+                isInitialized = true,
+                sampleRate = sampleRate,
+                generatedAudio = null,
+                generationInfo = null
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _uiState.value = _uiState.value.copy(
+                status = "Error initializing: ${e.message}",
+                isInitialized = false
+            )
+        }
+    }
+    
+
     
     fun updateText(text: String) {
         _uiState.value = _uiState.value.copy(inputText = text)
@@ -99,6 +108,8 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(selectedAudioFormat = format)
     }
     
+
+    
     fun generateSpeech() {
         val currentState = _uiState.value
         
@@ -120,8 +131,11 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 
                 val startTime = System.currentTimeMillis()
+                
+                val tts = supertonicTTS ?: throw IllegalStateException("Supertonic TTS not initialized")
                 val result = withContext(Dispatchers.IO) {
                     val voiceStyle = voiceStyleLoader.loadVoiceStyle(currentState.selectedVoiceStyle)
+                    
                     tts.generateSpeech(
                         text = currentState.inputText,
                         voiceStyle = voiceStyle,
@@ -130,37 +144,42 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
                         seed = currentState.seed
                     )
                 }
+                val audio = result.audio
+                val seedUsed = result.seedUsed
+                val sampleRate = tts.sampleRate
+                
                 val generationTime = System.currentTimeMillis() - startTime
                 
-                val audioDuration = result.audio.size.toFloat() / tts.sampleRate
+                val audioDuration = audio.size.toFloat() / sampleRate
                 val generationInfo = GenerationInfo(
-                    seed = result.seedUsed,
+                    seed = seedUsed,
                     speed = currentState.speed,
                     denoisingSteps = currentState.denoisingSteps,
                     voiceStyle = currentState.selectedVoiceStyle.removeSuffix(".json"),
                     audioDuration = audioDuration,
                     generationTime = generationTime / 1000f,
-                    sampleRate = tts.sampleRate,
-                    audioSamples = result.audio.size
+                    sampleRate = sampleRate,
+                    audioSamples = audio.size
                 )
                 
                 _uiState.value = currentState.copy(
                     isGenerating = false,
                     status = "Ready",
-                    generatedAudio = result.audio,
+                    generatedAudio = audio,
                     playbackPosition = 0,
-                    playbackDuration = result.audio.size,
+                    playbackDuration = audio.size,
                     generationInfo = generationInfo
                 )
                 
                 withContext(Dispatchers.IO) {
-                    audioPlayer?.loadAudio(result.audio)
+                    audioPlayer?.loadAudio(audio)
                     audioPlayer?.play()
                 }
                 
                 _uiState.value = _uiState.value.copy(isPlaying = true)
                 
             } catch (e: Exception) {
+                e.printStackTrace()
                 _uiState.value = currentState.copy(
                     isGenerating = false,
                     status = "Error: ${e.message}"
@@ -208,7 +227,7 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
                 val fileName = "supertonic_${timestamp}.${format.extension}"
                 
                 val result = withContext(Dispatchers.IO) {
-                    audioSaver.saveAudioToDownloads(audio, tts.sampleRate, fileName, format)
+                    audioSaver.saveAudioToDownloads(audio, currentState.sampleRate, fileName, format)
                 }
                 
                 result.fold(
@@ -229,7 +248,7 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         audioPlayer?.stop()
-        tts.close()
+        supertonicTTS?.close()
     }
 }
 
@@ -237,7 +256,7 @@ data class TTSUiState(
     val inputText: String = "This morning, I took a walk in the park, and the sound of the birds and the breeze was so pleasant that I stopped for a long time just to listen.",
     val voiceStyles: List<String> = emptyList(),
     val selectedVoiceStyle: String = "",
-    val speed: Float = 1.05f,
+    val speed: Float = 1.0f,
     val denoisingSteps: Int = 5,
     val seed: Long? = null,
     val isGenerating: Boolean = false,
@@ -247,7 +266,7 @@ data class TTSUiState(
     val isPlaying: Boolean = false,
     val playbackPosition: Int = 0,
     val playbackDuration: Int = 0,
-    val sampleRate: Int = 22050,
+    val sampleRate: Int = 44100,
     val generationInfo: GenerationInfo? = null,
     val selectedAudioFormat: com.sup3rmass1ve.supertonic.audio.AudioFormat = com.sup3rmass1ve.supertonic.audio.AudioFormat.WAV
 )
