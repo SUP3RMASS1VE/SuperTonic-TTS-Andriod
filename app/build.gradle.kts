@@ -12,8 +12,8 @@ android {
         applicationId = "com.sup3rmass1ve.supertonic"
         minSdk = 26
         targetSdk = 35
-        versionCode = 311
-        versionName = "3.1.1"
+        versionCode = 312
+        versionName = "3.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         

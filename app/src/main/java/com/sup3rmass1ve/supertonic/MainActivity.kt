@@ -47,9 +47,10 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             
             SupertonicTheme(darkTheme = isDarkMode) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
                     TTSScreen(
                         isDarkMode = isDarkMode,
