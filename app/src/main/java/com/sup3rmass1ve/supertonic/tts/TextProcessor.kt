@@ -38,33 +38,55 @@ class TextProcessor(context: Context) {
         // Normalize Unicode
         processed = Normalizer.normalize(processed, Normalizer.Form.NFKD)
         
-        // Remove emojis (wide Unicode range)
-        processed = processed.replace(Regex("[\uD83C-\uDBFF\uDC00-\uDFFF]+"), "")
+        // Remove emojis (comprehensive Unicode range matching Python)
+        val emojiPattern = Regex(
+            "[\uD83D\uDE00-\uD83D\uDE4F" +  // emoticons
+            "\uD83C\uDF00-\uD83D\uDDFF" +   // symbols & pictographs
+            "\uD83D\uDE80-\uD83D\uDEFF" +   // transport & map symbols
+            "\uD83D\uDC00-\uD83D\uDDFF" +   // animals & nature
+            "\uD83C\uDF00-\uD83C\uDFFF" +   // food & drink
+            "\u2600-\u26FF" +                // misc symbols
+            "\u2700-\u27BF" +                // dingbats
+            "\uD83C\uDDE6-\uD83C\uDDFF]+"   // flags
+        )
+        processed = emojiPattern.replace(processed, "")
         
-        // Replace various dashes and symbols (normalize apostrophes to standard ')
+        // Replace various dashes and symbols
         val replacements = mapOf(
-            "–" to "-", "‑" to "-", "—" to "-",
-            "¯" to " ", "_" to " ",
-            """ to "\"", """ to "\"",
-            "'" to "'", "'" to "'", "´" to "'", "`" to "'",
-            "[" to " ", "]" to " ", "|" to " ", "/" to " ",
-            "#" to " ", "→" to " ", "←" to " "
+            "–" to "-",
+            "‑" to "-",
+            "—" to "-",
+            "_" to " ",
+            "\u201c" to "\"",  // left double quote "
+            "\u201d" to "\"",  // right double quote "
+            "\u2018" to "'",   // left single quote '
+            "\u2019" to "'",   // right single quote '
+            "´" to "'",
+            "`" to "'",
+            "[" to " ",
+            "]" to " ",
+            "|" to " ",
+            "/" to " ",
+            "#" to " ",
+            "→" to " ",
+            "←" to " "
         )
         replacements.forEach { (old, new) ->
             processed = processed.replace(old, new)
         }
         
-        // Remove combining diacritics
-        // FIXME: this should be fixed for non-English languages
-        processed = processed.replace(Regex("[\u0302\u0303\u0304\u0305\u0306\u0307\u0308\u030A\u030B\u030C\u0327\u0328\u0329\u032A\u032B\u032C\u032D\u032E\u032F]"), "")
-        
         // Remove special symbols
         processed = processed.replace(Regex("[♥☆♡©\\\\]"), "")
         
         // Replace known expressions
-        processed = processed.replace("@", " at ")
-        processed = processed.replace("e.g.,", "for example, ")
-        processed = processed.replace("i.e.,", "that is, ")
+        val expressionReplacements = mapOf(
+            "@" to " at ",
+            "e.g.," to "for example, ",
+            "i.e.," to "that is, "
+        )
+        expressionReplacements.forEach { (old, new) ->
+            processed = processed.replace(old, new)
+        }
         
         // Fix spacing around punctuation
         processed = processed.replace(Regex(" ,"), ",")
@@ -83,8 +105,8 @@ class TextProcessor(context: Context) {
         // Remove extra spaces
         processed = processed.replace(Regex("\\s+"), " ").trim()
         
-        // Add period if text doesn't end with punctuation
-        if (!processed.matches(Regex(".*[.!?;:,'\"')\\]}…。」』】〉》›»]$"))) {
+        // If text doesn't end with punctuation, quotes, or closing brackets, add a period
+        if (!processed.matches(Regex(".*[.!?;:,'\"'\\)\\]}…。」』】〉》›»]$"))) {
             processed += "."
         }
         
