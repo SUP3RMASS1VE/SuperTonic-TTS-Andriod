@@ -27,7 +27,7 @@ A native Android application for on-device multilingual text-to-speech (TTS) usi
 
 * **Multilingual Support** – Generate speech in 5 languages (English, Korean, Spanish, Portuguese, French)
 * **On-Device Processing** – Fully offline TTS, preserving user privacy
-* **Four Voice Styles** – F1, F2, M1, M2
+* **Ten Voice Styles** – F1-F5, M1-M5
 * **Optimized Performance** – Fast ONNX inference with selective quantization
 * **Adjustable Parameters** – Control speed (0.5x–2.0x) and denoising steps (1–20)
 * **Audio Export** – Save generated speech as WAV files
