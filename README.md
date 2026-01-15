@@ -1,6 +1,6 @@
-# Supertonic TTS – Android App
+# Supertonic v2 TTS – Android App
 
-A native Android application for on-device text-to-speech (TTS) using [Supertonic TTS](https://github.com/supertone-inc/supertonic) and ONNX Runtime.
+A native Android application for on-device multilingual text-to-speech (TTS) using [Supertonic v2 TTS](https://github.com/supertone-inc/supertonic) and ONNX Runtime.
 
 ---
 
@@ -11,21 +11,23 @@ A native Android application for on-device text-to-speech (TTS) using [Supertoni
 3. [Installation](#installation)
 4. [Usage](#usage)
 5. [Voice Styles](#voice-styles)
-6. [Performance](#performance)
-7. [Included Models](#included-models)
-8. [Privacy](#privacy)
-9. [Technology](#technology)
-10. [License](#license)
-11. [Support](#support)
-12. [Changelog](#changelog)
+6. [Supported Languages](#supported-languages)
+7. [Performance](#performance)
+8. [Included Models](#included-models)
+9. [Privacy](#privacy)
+10. [Technology](#technology)
+11. [License](#license)
+12. [Support](#support)
+13. [Changelog](#changelog)
 
 ---
 
 ## Features
 
+* **Multilingual Support** – Generate speech in 5 languages (English, Korean, Spanish, Portuguese, French)
 * **On-Device Processing** – Fully offline TTS, preserving user privacy
 * **Four Voice Styles** – F1, F2, M1, M2
-* **Optimized Performance** – Fast ONNX inference (5–15 seconds)
+* **Optimized Performance** – Fast ONNX inference with selective quantization
 * **Adjustable Parameters** – Control speed (0.5x–2.0x) and denoising steps (1–20)
 * **Audio Export** – Save generated speech as WAV files
 * **Privacy-First** – No network connection, data remains on-device
@@ -35,7 +37,7 @@ A native Android application for on-device text-to-speech (TTS) using [Supertoni
 ## Requirements
 
 * Android 8.0 (API 26) or higher
-* ~500 MB free storage
+* ~400 MB free storage
 * 2 GB+ RAM recommended
 
 ---
@@ -53,13 +55,13 @@ A native Android application for on-device text-to-speech (TTS) using [Supertoni
 
 1. Launch the app (model loading takes ~10 seconds)
 2. Enter text or use default sample text
-3. Select voice (F1, F2, M1, M2)
-4. Adjust settings:
-
+3. Select language (English, Korean, Spanish, Portuguese, or French)
+4. Select voice (F1, F2, M1, M2)
+5. Adjust settings:
    * **Speed:** 0.5x (slow) – 2.0x (fast)
    * **Denoising steps:** 1–20 (higher = better quality, slower)
-5. Tap **Generate Speech**
-6. Save audio as WAV if desired
+6. Tap **Generate Speech**
+7. Save audio as WAV if desired
 
 ---
 
@@ -69,6 +71,20 @@ A native Android application for on-device text-to-speech (TTS) using [Supertoni
 * **F2** – Softer female voice, warm tone
 * **M1** – Deep male voice, authoritative
 * **M2** – Lighter male voice, friendly
+
+---
+
+## Supported Languages
+
+Supertonic v2 supports multilingual text-to-speech:
+
+* **English (en)** – Native English pronunciation
+* **Korean (ko)** – Native Korean pronunciation
+* **Spanish (es)** – Native Spanish pronunciation
+* **Portuguese (pt)** – Native Portuguese pronunciation
+* **French (fr)** – Native French pronunciation
+
+Simply select your language from the dropdown before generating speech. The model automatically adjusts pronunciation and intonation for each language.
 
 ---
 
@@ -88,14 +104,14 @@ A native Android application for on-device text-to-speech (TTS) using [Supertoni
 
 ## Included Models
 
-All models are bundled within the APK (~250–300 MB):
+All models are bundled within the APK with selective int8 quantization (~250–300 MB):
 
-| Model              | Size     |
-| ------------------ | -------- |
-| Duration Predictor | 1.5 MB   |
-| Text Encoder       | 26.7 MB  |
-| Vector Estimator   | 126.3 MB |
-| Vocoder            | 96.7 MB  |
+| Model              | Size (Quantized) |
+| ------------------ | ---------------- |
+| Duration Predictor | ~1.5 MB          |
+| Text Encoder       | ~20 MB           |
+| Vector Estimator   | ~90 MB           |
+| Vocoder            | ~70 MB           |
 
 Voice configuration files:
 
@@ -103,6 +119,8 @@ Voice configuration files:
 * F2.json
 * M1.json
 * M2.json
+
+**Model Optimization:** Models use selective int8 quantization (MatMul operations only) to reduce size while maintaining audio quality.
 
 ---
 
@@ -113,6 +131,7 @@ Voice configuration files:
 * No analytics
 * Minimal permissions (storage for saving files only)
 * Generated audio and input text remain on-device
+* All languages processed locally
 
 ---
 
@@ -122,7 +141,8 @@ Voice configuration files:
 * **UI:** Jetpack Compose + Material 3
 * **ML Runtime:** ONNX Runtime Android
 * **Architecture:** MVVM with ViewModel
-* **Models:** Supertonic TTS by Supertone Inc.
+* **Models:** Supertonic v2 TTS by Supertone Inc.
+* **Optimization:** Selective int8 quantization for reduced size
 
 ---
 
@@ -134,11 +154,10 @@ MIT License
 
 ### Model Weights
 
-Supertonic TTS model weights are licensed under **OpenRAIL-M**.
+Supertonic v2 TTS model weights are licensed under **OpenRAIL-M**.
 
 * Full License Text: [OpenRAIL-M License](https://www.licenses.ai/s/BigScience-Open-RAIL-M-License.pdf)
 * Key restrictions include:
-
   * No illegal activity
   * No harming or exploiting minors
   * No generating or disseminating verifiably false information intended to harm
@@ -163,6 +182,15 @@ ONNX Runtime is licensed under MIT License
 
 ## Changelog
 
+### v2.0.0 – Multilingual Update
+
+* **NEW:** Support for 5 languages (English, Korean, Spanish, Portuguese, French)
+* **NEW:** Language selection dropdown in UI
+* Updated to Supertonic v2 models
+* Improved text preprocessing for multilingual support
+* Selective int8 quantization for smaller APK size
+* Updated UI to show "Supertonic v2"
+
 ### v1.0.0 – Initial Release
 
 * On-device TTS with four voice styles
@@ -177,6 +205,4 @@ ONNX Runtime is licensed under MIT License
 
 ---
 
-**Made with care using Supertonic TTS.**
-
-
+**Made with care using Supertonic v2 TTS.**
